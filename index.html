@@ -1,54 +1,173 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="css/style.css">
-    <title>Scam</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Магазин товаров</title>
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
-    <div class="pc">
-
-        <div class="header_pc">
-
-        </div>
-
-        <div class="content_pc">
-
-        </div>
-
-        <div class="footer_pc">
-
-        </div>
-
+<body class="bg-gray-100 text-gray-800">
+  <!-- Шапка -->
+  <header class="bg-white shadow p-4 flex justify-between items-center sticky top-0 z-50">
+    <h1 class="text-xl font-bold text-teal-600">JoomStyle</h1>
+    <div class="flex items-center gap-2">
+      <input id="searchInput" type="text" placeholder="Поиск..." class="px-3 py-1 border rounded-md text-sm text-gray-800 bg-white focus:outline-none" />
+      <button id="cartButton" class="relative">
+        🛒<span id="cartCount" class="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">0</span>
+      </button>
     </div>
+  </header>
 
-    <div class="mobile">
-
-        <div class="header_mobile">
-            <details>
-                <summary class="menu_open"><img src="/icons/menu.png" alt=""></summary>
-                <div class="menu_content">
-                  <a class="menu_category" href="#">Пункт 1</a>
-                  <a class="menu_category" href="#">Пункт 2</a>
-                  <a class="menu_category" href="#">Пункт 3</a>
-                  <button class="menu_close" onclick="this.closest('details').removeAttribute('open')"><img src="/icons/close.png" alt=""></button>
-                </div>
-                </details>
-            <div class="overlay"></div>
-            <a href="index.html" class="logo">Scam</a>
-        </div>
-
-        <div class="content_mobile">
-            <div class="block_search">
-                <input class="search" type="text" placeholder="Поиск">
-            </div>
-        </div>
-
-        <div class="footer_mobile">
-
-        </div>
-
+  <!-- Список товаров -->
+  <main class="p-4">
+    <div id="productGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+      <div class="product-card bg-white rounded-lg p-4 shadow" data-name="Наушники" data-price="2999">
+        <h3 class="text-lg font-semibold">Наушники</h3>
+        <p class="text-gray-600 mb-2">2999 ₽</p>
+        <button class="addToCart bg-teal-600 text-white px-3 py-1 rounded hover:bg-teal-700">В корзину</button>
+      </div>
+      <div class="product-card bg-white rounded-lg p-4 shadow" data-name="Смартфон" data-price="19999">
+        <h3 class="text-lg font-semibold">Смартфон</h3>
+        <p class="text-gray-600 mb-2">19999 ₽</p>
+        <button class="addToCart bg-teal-600 text-white px-3 py-1 rounded hover:bg-teal-700">В корзину</button>
+      </div>
+      <div class="product-card bg-white rounded-lg p-4 shadow" data-name="Часы" data-price="4999">
+        <h3 class="text-lg font-semibold">Часы</h3>
+        <p class="text-gray-600 mb-2">4999 ₽</p>
+        <button class="addToCart bg-teal-600 text-white px-3 py-1 rounded hover:bg-teal-700">В корзину</button>
+      </div>
+      <div class="product-card bg-white rounded-lg p-4 shadow" data-name="Пауэрбанк" data-price="1499">
+        <h3 class="text-lg font-semibold">Пауэрбанк</h3>
+        <p class="text-gray-600 mb-2">1499 ₽</p>
+        <button class="addToCart bg-teal-600 text-white px-3 py-1 rounded hover:bg-teal-700">В корзину</button>
+      </div>
     </div>
+  </main>
+
+  <!-- Подвал -->
+  <footer class="bg-white mt-10 p-4 shadow-inner">
+    <div class="text-center text-sm text-gray-600">© 2025 JoomStyle. Все права защищены.</div>
+  </footer>
+
+  <!-- Корзина Modal -->
+  <div id="cartModal" class="modal fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+    <div class="bg-white rounded-lg p-4 w-full max-w-md mx-4">
+      <h2 class="text-xl font-semibold mb-4">Корзина</h2>
+      <div id="cartItems" class="space-y-4 max-h-60 overflow-y-auto"></div>
+      <div class="flex justify-between items-center mt-6">
+        <p class="text-base font-semibold">Итого: <span id="cartTotal">0 ₽</span></p>
+        <button id="closeCart" class="text-base font-semibold text-teal-600">Закрыть</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let cart = [];
+    const cartButton = document.getElementById('cartButton');
+    const cartModal = document.getElementById('cartModal');
+    const closeCart = document.getElementById('closeCart');
+    const cartItems = document.getElementById('cartItems');
+    const cartTotal = document.getElementById('cartTotal');
+    const cartCount = document.getElementById('cartCount');
+    const searchInput = document.getElementById('searchInput');
+    const productGrid = document.getElementById('productGrid');
+
+    function updateCart() {
+      cartItems.innerHTML = '';
+      let total = 0;
+      const cartMap = {};
+
+      cart.forEach(item => {
+        if (!cartMap[item.name]) {
+          cartMap[item.name] = { ...item, quantity: 1 };
+        } else {
+          cartMap[item.name].quantity++;
+        }
+      });
+
+      Object.values(cartMap).forEach(item => {
+        const cartItem = document.createElement('div');
+        cartItem.classList.add('flex', 'flex-col', 'sm:flex-row', 'justify-between', 'items-start', 'sm:items-center', 'mb-4', 'gap-2');
+
+        cartItem.innerHTML = `
+          <div>
+            <p class="font-semibold">${item.name}</p>
+            <p class="text-gray-600">Цена: ${item.price} ₽</p>
+          </div>
+          <div class="flex items-center space-x-2">
+            <button class="increaseQuantity bg-teal-600 text-white px-3 py-1 rounded hover:bg-teal-700" data-name="${item.name}">+</button>
+            <span class="quantity">${item.quantity}</span>
+            <button class="decreaseQuantity bg-teal-600 text-white px-3 py-1 rounded hover:bg-teal-700" data-name="${item.name}">-</button>
+            <button class="removeItem bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700" data-name="${item.name}">Удалить</button>
+          </div>
+        `;
+        cartItems.appendChild(cartItem);
+        total += item.price * item.quantity;
+      });
+
+      cartTotal.innerText = total + ' ₽';
+      cartCount.innerText = cart.length;
+    }
+
+    function addToCart(event) {
+      const productCard = event.target.closest('.product-card');
+      const name = productCard.getAttribute('data-name');
+      const price = parseFloat(productCard.getAttribute('data-price'));
+      cart.push({ name, price });
+      updateCart();
+    }
+
+    function increaseQuantity(event) {
+      const name = event.target.getAttribute('data-name');
+      cart.push(cart.find(i => i.name === name));
+      updateCart();
+    }
+
+    function decreaseQuantity(event) {
+      const name = event.target.getAttribute('data-name');
+      const index = cart.findIndex(i => i.name === name);
+      if (index !== -1) {
+        cart.splice(index, 1);
+        updateCart();
+      }
+    }
+
+    function removeItem(event) {
+      const name = event.target.getAttribute('data-name');
+      cart = cart.filter(item => item.name !== name);
+      updateCart();
+    }
+
+    cartButton.addEventListener('click', () => {
+      cartModal.classList.remove('hidden');
+    });
+
+    closeCart.addEventListener('click', () => {
+      cartModal.classList.add('hidden');
+    });
+
+    searchInput.addEventListener('input', () => {
+      const query = searchInput.value.toLowerCase();
+      const productCards = productGrid.getElementsByClassName('product-card');
+      for (const card of productCards) {
+        const productName = card.getAttribute('data-name').toLowerCase();
+        card.style.display = productName.includes(query) ? 'block' : 'none';
+      }
+    });
+
+    document.querySelectorAll('.addToCart').forEach(button => {
+      button.addEventListener('click', addToCart);
+    });
+
+    cartItems.addEventListener('click', (event) => {
+      if (event.target.classList.contains('increaseQuantity')) {
+        increaseQuantity(event);
+      } else if (event.target.classList.contains('decreaseQuantity')) {
+        decreaseQuantity(event);
+      } else if (event.target.classList.contains('removeItem')) {
+        removeItem(event);
+      }
+    });
+  </script>
 </body>
 </html>
