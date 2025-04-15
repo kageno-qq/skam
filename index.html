@@ -43,13 +43,22 @@
   </div>
 
   <!-- Cart Sidebar -->
-  <div id="cartSidebar" class="fixed top-0 right-0 w-80 h-full bg-white shadow-lg transform translate-x-full transition-transform duration-300 z-50 overflow-y-auto">
-    <div class="p-4 border-b flex justify-between items-center">
-      <h2 class="text-lg font-semibold">Ваша корзина</h2>
-      <button id="closeCart" class="text-gray-500 hover:text-black text-2xl leading-none">&times;</button>
-    </div>
-    <div id="cartItems" class="p-4 space-y-4">
-      <p class="text-gray-500 text-sm">Корзина пуста</p>
+  <div id="cartSidebar" class="fixed inset-0 flex justify-center items-center z-50 bg-black bg-opacity-50 hidden">
+    <div class="bg-white w-full max-w-4xl p-6 rounded-lg shadow-lg flex flex-col sm:flex-row space-y-6 sm:space-y-0 sm:space-x-6">
+      <!-- Товары в корзине -->
+      <div id="cartItems" class="flex-1 space-y-4 overflow-y-auto">
+        <p class="text-gray-500 text-sm">Корзина пуста</p>
+      </div>
+
+      <!-- Блок с информацией о заказе и кнопкой оформить -->
+      <div class="w-full sm:w-1/3 flex flex-col space-y-4">
+        <div id="cartSummary" class="border-t pt-4">
+          <p class="text-lg font-semibold">Итого: <span id="totalPrice">0₽</span></p>
+          <button id="checkout" class="mt-2 bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded">
+            Оформить заказ
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -60,188 +69,152 @@
   <main class="pt-24 px-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4" id="productContainer"></main>
 
   <script>
-    const menuButton = document.getElementById("menuButton");
-    const sidebar = document.getElementById("sidebar");
-    const overlay = document.getElementById("overlay");
-    const searchInput = document.getElementById("searchInput");
-    const productContainer = document.getElementById("productContainer");
-    const cartButton = document.getElementById("cartButton");
-    const cartSidebar = document.getElementById("cartSidebar");
-    const closeCart = document.getElementById("closeCart");
-    const cartItems = document.getElementById("cartItems");
-    const cartCount = document.getElementById("cartCount");
+    let cart = {};
 
-    let cart = {}; // { "product_name": { ...product, count: 2 } }
-
-
-    function openSidebarMenu() {
-      sidebar.classList.remove("-translate-x-full");
-      overlay.classList.remove("hidden");
-    }
-
-    function closeSidebarMenu() {
-      sidebar.classList.add("-translate-x-full");
-      overlay.classList.add("hidden");
-    }
-
-    function openCart() {
-      cartSidebar.classList.remove("translate-x-full");
-      overlay.classList.remove("hidden");
-    }
-
-    function closeCartSidebar() {
-      cartSidebar.classList.add("translate-x-full");
-      overlay.classList.add("hidden");
-    }
-
-    menuButton.addEventListener("click", () => {
-      openSidebarMenu();
-    });
-
-    cartButton.addEventListener("click", () => {
-      openCart();
-    });
-
-    closeCart.addEventListener("click", () => {
-      closeCartSidebar();
-    });
-
-    overlay.addEventListener("click", () => {
-      closeSidebarMenu();
-      closeCartSidebar();
-    });
-
-    searchInput.addEventListener("focus", closeSidebarMenu);
-
+    // Пример товаров
     const products = [
-      { name: "Наушники", price: "1990₽", image: "https://via.placeholder.com/200x150?text=Наушники" },
-      { name: "Смартфон", price: "23990₽", image: "https://via.placeholder.com/200x150?text=Смартфон" },
-      { name: "Ноутбук", price: "69990₽", image: "https://via.placeholder.com/200x150?text=Ноутбук" },
-      { name: "Монитор", price: "14990₽", image: "https://via.placeholder.com/200x150?text=Монитор" },
-      { name: "Клавиатура", price: "2990₽", image: "https://via.placeholder.com/200x150?text=Клавиатура" },
-      { name: "Мышь", price: "1490₽", image: "https://via.placeholder.com/200x150?text=Мышь" },
-      { name: "Колонки", price: "2490₽", image: "https://via.placeholder.com/200x150?text=Колонки" },
-      { name: "Чехол", price: "990₽", image: "https://via.placeholder.com/200x150?text=Чехол" },
+      {
+        name: "Товар 1",
+        image: "https://via.placeholder.com/150",
+        price: "1,000₽",
+      },
+      {
+        name: "Товар 2",
+        image: "https://via.placeholder.com/150",
+        price: "500₽",
+      },
+      {
+        name: "Товар 3",
+        image: "https://via.placeholder.com/150",
+        price: "1,200₽",
+      },
     ];
 
-    function updateCartUI() {
-  cartItems.innerHTML = "";
-
-  const productKeys = Object.keys(cart);
-  if (productKeys.length === 0) {
-    cartItems.innerHTML = '<p class="text-gray-500 text-sm">Корзина пуста</p>';
-    cartCount.classList.add("hidden");
-    return;
-  }
-
-  let totalCount = 0;
-  let total = 0;
-
-  productKeys.forEach(key => {
-    const item = cart[key];
-    const price = parseInt(item.price.replace(/[^\d]/g, ""));
-    const itemTotal = price * item.count;
-    total += itemTotal;
-    totalCount += item.count;
-
-    const div = document.createElement("div");
-    div.className = "flex justify-between items-center space-x-4";
-
-    div.innerHTML = `
-      <img src="${item.image}" alt="${item.name}" class="w-16 h-16 object-cover rounded" />
-      <div class="flex-1">
-        <p class="font-semibold">${item.name}</p>
-        <p class="text-sm text-blue-600">${price.toLocaleString()}₽ x ${item.count} = ${itemTotal.toLocaleString()}₽</p>
-      </div>
-      <div class="flex items-center space-x-1">
-        <button class="decrease px-2 py-1 bg-gray-200 rounded">−</button>
-        <button class="increase px-2 py-1 bg-gray-200 rounded">+</button>
-      </div>
-    `;
-
-    // Навешиваем обработчики
-    div.querySelector(".increase").addEventListener("click", () => {
-      item.count++;
-      updateCartUI();
-    });
-
-    div.querySelector(".decrease").addEventListener("click", () => {
-      item.count--;
-      if (item.count <= 0) {
-        delete cart[key];
-      }
-      updateCartUI();
-    });
-
-    cartItems.appendChild(div);
-  });
-
-  cartCount.classList.remove("hidden");
-  cartCount.textContent = totalCount;
-
-  const summary = document.createElement("div");
-  summary.className = "border-t pt-4 mt-4 text-right";
-  summary.innerHTML = `
-    <p class="text-lg font-semibold">Итого: ${total.toLocaleString("ru-RU")}₽</p>
-    <button id="checkout" class="mt-2 bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded">
-      Оформить заказ
-    </button>
-  `;
-  cartItems.appendChild(summary);
-
-  document.getElementById("checkout").addEventListener("click", () => {
-    alert("Спасибо за заказ!");
-    cart = {};
-    updateCartUI();
-    closeCartSidebar();
-  });
-}
-
-
-
-    function renderProducts(items) {
+    // Отображение товаров
+    function renderProducts() {
+      const productContainer = document.getElementById("productContainer");
       productContainer.innerHTML = "";
 
-      if (items.length === 0) {
-        productContainer.innerHTML = '<p class="col-span-full text-center text-gray-500">Ничего не найдено</p>';
-        return;
-      }
+      products.forEach((product) => {
+        const div = document.createElement("div");
+        div.className = "bg-white p-4 rounded-lg shadow-md";
 
-      items.forEach(product => {
-        const card = document.createElement("div");
-        card.className = "bg-white rounded-xl shadow p-4 flex flex-col items-center text-center";
-        card.innerHTML = `
-          <img src="${product.image}" alt="${product.name}" class="w-full h-40 object-cover rounded mb-2" />
-          <h2 class="font-semibold text-lg">${product.name}</h2>
-          <p class="text-blue-600 font-bold mb-2">${product.price}</p>
-          <button class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-1 rounded add-to-cart">
-            В корзину
-          </button>
+        div.innerHTML = `
+          <img src="${product.image}" alt="${product.name}" class="w-full h-32 object-cover rounded">
+          <h3 class="text-lg font-semibold mt-2">${product.name}</h3>
+          <p class="text-gray-600 mt-1">${product.price}</p>
+          <button class="add-to-cart bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 mt-4 rounded">В корзину</button>
         `;
-        const btn = card.querySelector(".add-to-cart");
-        btn.addEventListener("click", () => {
-  if (cart[product.name]) {
-    // Если товар уже в корзине, увеличиваем его количество
-    cart[product.name].count++;
-  } else {
-    // Если товара нет в корзине, добавляем его с количеством 1
-    cart[product.name] = { ...product, count: 1 };
-  }
-  updateCartUI();
-});
 
-        productContainer.appendChild(card);
-        
+        const btn = div.querySelector(".add-to-cart");
+
+        btn.addEventListener("click", () => {
+          if (cart[product.name]) {
+            cart[product.name].count++;
+          } else {
+            cart[product.name] = { ...product, count: 1 };
+          }
+          updateCartUI();
+        });
+
+        productContainer.appendChild(div);
       });
     }
 
-    searchInput.addEventListener("input", () => {
-      const query = searchInput.value.trim().toLowerCase();
-      const filtered = products.filter(p => p.name.toLowerCase().includes(query));
-      renderProducts(filtered);
+    // Обновление корзины
+    function updateCartUI() {
+      const cartItemsDiv = document.getElementById("cartItems");
+      const cartSummaryDiv = document.getElementById("cartSummary");
+      const totalPriceDiv = document.getElementById("totalPrice");
+      cartItemsDiv.innerHTML = ""; // Очищаем список товаров
+
+      const productKeys = Object.keys(cart);
+      let total = 0;
+      let totalCount = 0;
+
+      if (productKeys.length === 0) {
+        cartItemsDiv.innerHTML = '<p class="text-gray-500 text-sm">Корзина пуста</p>';
+        totalPriceDiv.textContent = '0₽';
+        return;
+      }
+
+      productKeys.forEach(key => {
+        const item = cart[key];
+        const price = parseInt(item.price.replace(/[^\d]/g, ""));
+        const itemTotal = price * item.count;
+        total += itemTotal;
+        totalCount += item.count;
+
+        const div = document.createElement("div");
+        div.className = "flex justify-between items-center space-x-4";
+
+        div.innerHTML = `
+          <div class="flex-1">
+            <p class="font-semibold">${item.name}</p>
+            <p class="text-sm text-blue-600">${price.toLocaleString()}₽ x ${item.count} = ${itemTotal.toLocaleString()}₽</p>
+          </div>
+          <div class="flex items-center space-x-1">
+            <button class="decrease px-2 py-1 bg-gray-200 rounded">−</button>
+            <button class="increase px-2 py-1 bg-gray-200 rounded">+</button>
+            <button class="remove px-2 py-1 bg-red-500 text-white rounded">❌</button>
+          </div>
+        `;
+
+        div.querySelector(".increase").addEventListener("click", () => {
+          item.count++;
+          updateCartUI();
+        });
+
+        div.querySelector(".decrease").addEventListener("click", () => {
+          item.count--;
+          if (item.count <= 0) {
+            delete cart[key];
+          }
+          updateCartUI();
+        });
+
+        div.querySelector(".remove").addEventListener("click", () => {
+          delete cart[key];
+          updateCartUI();
+        });
+
+        cartItemsDiv.appendChild(div);
+      });
+
+      totalPriceDiv.textContent = total.toLocaleString("ru-RU") + '₽';
+
+      const checkoutButton = document.createElement("button");
+      checkoutButton.className = "mt-2 bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded";
+      checkoutButton.textContent = "Оформить заказ";
+      checkoutButton.addEventListener("click", () => {
+        alert("Спасибо за заказ!");
+        cart = {};
+        updateCartUI();
+        closeCartSidebar();
+      });
+
+      cartSummaryDiv.appendChild(checkoutButton);
+    }
+
+    // Открытие корзины
+    document.getElementById("cartButton").addEventListener("click", () => {
+      document.getElementById("cartSidebar").classList.remove("hidden");
+      document.getElementById("overlay").classList.remove("hidden");
     });
 
-    renderProducts(products);
+    // Закрытие корзины
+    document.getElementById("overlay").addEventListener("click", () => {
+      closeCartSidebar();
+    });
+
+    function closeCartSidebar() {
+      document.getElementById("cartSidebar").classList.add("hidden");
+      document.getElementById("overlay").classList.add("hidden");
+    }
+
+    // Инициализация
+    renderProducts();
   </script>
+
 </body>
 </html>
